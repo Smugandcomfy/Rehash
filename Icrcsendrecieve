@@ -1,0 +1,29 @@
+import L "mo:devefi-icrc-ledger";
+import Principal "mo:base/Principal";
+
+
+actor class() = this {
+
+    stable let lmem = L.LMem(); // has to be stable
+    
+    let ledger = L.Ledger(lmem, "mxzaz-hqaaa-aaaar-qaada-cai", #last);
+
+    ledger.onReceive(func (t) = ignore ledger.send({ to = t.from; amount = t.amount; from_subaccount = t.to.subaccount; }));
+    
+    // there are also onMint, onSent (from this canister), onBurn
+
+    ledger.start();
+    
+    public shared({caller}) func start() { 
+         assert(Principal.isController(caller));
+         ledger.setOwner(this); // required to be called once when canister is installed
+         };
+
+    public query func getErrors() : async [Text] { 
+        ledger.getErrors(); // When running timers, if there is an error it will show here and nowhere else. (Hooks are called by timers too)
+    };
+
+    public query func getInfo() : async L.Info {
+        ledger.getInfo();
+    }
+}
